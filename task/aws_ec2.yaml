@@ -1,0 +1,42 @@
+- name:  creating a key pair
+  ec2_key:
+    name: my_key
+    key_material: "{{ vault_public_ssh_key }}"
+    force: false
+
+- name:  creating a ec2 instance
+  ec2:
+    instance_tags:
+      name: new_instance
+    key_name: my_key
+    instance_type: "t2.micro"
+    image: "ami-0cfee17793b08a293"
+    wait: yes
+    count: 1
+    vpc_subnet_id: "{{ vpc_public_subnet_id }}"
+    group: "mySecurityGroup"
+    assign_public_ip: yes
+    instance_profile_name: CloudWatchAgentServerRole
+  register: ec2
+
+- name: Add ec2 instance public_ip
+  add_host:
+    name: "{{ item.public_ip }}"
+    groups: ec2_instance
+  with_items: "{{ ec2.instances }}"
+
+- name: Wait for SSH to come up
+  wait_for:
+      host: "{{ item.public_ip }}"
+      port: 22 
+      state: started 
+  with_items: "{{ ec2.instances }}"
+
+- name: Write the new ec2 instance host key to known hosts
+  connection: local
+  shell: "ssh-keyscan -H {{ item.public_ip }} >> ~/.ssh/known_hosts"
+  with_items: "{{ ec2.instances }}"
+
+
+
+

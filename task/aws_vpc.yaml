@@ -1,0 +1,76 @@
+- name: create VPC
+  ec2_vpc_net:
+    name: "VPC"
+    state: present
+    cidr_block: "10.0.0.0/16"
+  register: create_vpc
+
+- name: "set fact: VPC ID"
+  set_fact:
+    vpc_id: "{{ create_vpc.vpc.id }}"
+
+- name: create public VPC subnets
+  ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{ vpc_id }}"
+    cidr: "10.0.0.0/24"
+    map_public: true
+    az: "us-east-1c"
+  register: create_public_vpc_subnets
+
+- name: create private VPC subnets
+  ec2_vpc_subnet:
+    vpc_id: "{{ vpc_id }}"
+    state: present
+    cidr: "10.0.1.0/24"
+    az: "us-east-1b"
+  register: create_private_vpc_subnets
+
+- name: "set fact: VPC private subnet IDs"
+  set_fact:
+    vpc_private_subnet_id: "{{ create_private_vpc_subnets.subnet.id }}"
+
+- name: "set fact: VPC public subnet IDs"
+  set_fact:
+    vpc_public_subnet_id: "{{ create_public_vpc_subnets.subnet.id  }}"
+
+- name: create VPC security groups
+  ec2_group:
+    name: "mySecurityGroup"
+    description: "create VPC security groups"
+    vpc_id: "{{ vpc_id }}"
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 10.0.0.0/16
+      - proto: tcp
+        from_port: 3306
+        to_port: 3306
+        cidr_ip: 10.0.0.0/16
+  register: create_security_groups
+
+- name: "set fact: VPC security groups IDs"
+  set_fact:
+    vpc_security_groups_id: "{{ create_security_groups.group_id  }}"
+
+- name: create VPC security groups
+  ec2_vpc_igw:
+    vpc_id: "{{ vpc_id }}"
+    state: present
+  register: igw
+
+- name: create route table for public subnets
+  ec2_vpc_route_table:
+    vpc_id: "{{ vpc_id }}"
+    subnets:
+      - "{{ vpc_private_subnet_id }}"
+      - "{{ vpc_public_subnet_id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}"
+

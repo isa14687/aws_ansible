@@ -1,0 +1,33 @@
+- hosts: vpc
+  vars_files:
+    - var/vault.yaml
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ vault_aws_access_id }}"
+    AWS_SECRET_ACCESS_KEY: "{{ vault_asw_secret_access_key}}"
+    AWS_REGION: "us-east-1"
+  tasks:
+    - include_tasks: task/aws_vpc.yaml
+    - include_tasks: task/aws_rds.yaml
+    - include_tasks: task/aws_ec2.yaml
+
+- hosts: ec2_instance
+  remote_user: ubuntu
+  become: yes
+  gather_facts: no
+  tasks:
+   - name: download cloudwatch-agent
+     apt:
+       deb: https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+       
+   - name: install collectd
+     apt:
+        name: collectd
+        update_cache: yes
+
+   - name: Ansible copy file cloudwatch agent config to remote server
+     copy:
+      src: config/config.json
+      dest: /opt/aws/amazon-cloudwatch-agent/bin
+
+   - name: start cloudwatch agent
+     command: "sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s"
