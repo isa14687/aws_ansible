@@ -20,3 +20,4 @@
     password: adminadmin
     subnet: "MySQL-subnetgroup"
     vpc_security_groups: "{{ vpc_security_groups_id }}"
+    multi_zone: false

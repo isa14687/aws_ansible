@@ -3,7 +3,7 @@
     - var/vault.yaml
   environment:
     AWS_ACCESS_KEY_ID: "{{ vault_aws_access_id }}"
-    AWS_SECRET_ACCESS_KEY: "{{ vault_asw_secret_access_key}}"
+    AWS_SECRET_ACCESS_KEY: "{{ vault_aws_secret_access_key}}"
     AWS_REGION: "us-east-1"
   tasks:
     - include_tasks: task/aws_vpc.yaml

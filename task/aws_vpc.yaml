@@ -68,9 +68,30 @@
   ec2_vpc_route_table:
     vpc_id: "{{ vpc_id }}"
     subnets:
-      - "{{ vpc_private_subnet_id }}"
       - "{{ vpc_public_subnet_id }}"
     routes:
       - dest: 0.0.0.0/0
         gateway_id: "{{ igw.gateway_id }}"
+
+- name: allocate a new elastic IP without associating it to anything
+  ec2_eip:
+    state: present
+  register: eip
+
+- name: Create new nat gateway using an allocation-id.
+  ec2_vpc_nat_gateway:
+    state: present
+    subnet_id: "{{ vpc_public_subnet_id }}"
+    allocation_id: "{{ eip.allocation_id }}"
+    wait: yes
+  register: new_nat_gateway
+
+- name: create route table for private subnets
+  ec2_vpc_route_table:
+    vpc_id: "{{ vpc_id }}"
+    subnets:
+      - "{{ vpc_private_subnet_id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ new_nat_gateway.nat_gateway_id }}"
 
