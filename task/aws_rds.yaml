@@ -5,7 +5,7 @@
     description: Subnet Group for MySQL-subnetgroup
     subnets:
       - "{{ vpc_private_subnet_id }}"
-      - "{{ vpc_public_subnet_id }}"
+      - "{{ vpc_private_subnet_id_2 }}"
   register: subnet_group_results
 
 

@@ -26,9 +26,22 @@
     az: "us-east-1b"
   register: create_private_vpc_subnets
 
+- name: create private VPC subnets 2
+  ec2_vpc_subnet:
+    vpc_id: "{{ vpc_id }}"
+    state: present
+    cidr: "10.0.2.0/24"
+    az: "us-east-1c"
+  register: create_private_vpc_subnets_2
+
 - name: "set fact: VPC private subnet IDs"
   set_fact:
     vpc_private_subnet_id: "{{ create_private_vpc_subnets.subnet.id }}"
+
+- name: "set fact: VPC private subnet IDs 2"
+  set_fact:
+    vpc_private_subnet_id_2: "{{ create_private_vpc_subnets_2.subnet.id }}"
+
 
 - name: "set fact: VPC public subnet IDs"
   set_fact:
@@ -91,6 +104,7 @@
     vpc_id: "{{ vpc_id }}"
     subnets:
       - "{{ vpc_private_subnet_id }}"
+      - "{{ vpc_private_subnet_id_2 }}"
     routes:
       - dest: 0.0.0.0/0
         gateway_id: "{{ new_nat_gateway.nat_gateway_id }}"
